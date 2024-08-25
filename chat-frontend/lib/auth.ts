@@ -10,10 +10,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   providers: [Google],
   adapter: PrismaAdapter(prisma),
-  callbacks:{
-     authorized({request,auth}) {
-      if(request.nextUrl.pathname==='/') return !!auth;
-      return true
-    },
-  }
+  // callbacks:{
+  //    authorized({request,auth}) {
+  //     if(request.nextUrl.pathname==='/') return !!auth;
+  //     return true
+  //   },
+  // },
 })
