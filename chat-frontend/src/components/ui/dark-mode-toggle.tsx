@@ -15,7 +15,7 @@ export function DarkModeToggle() {
   const { setTheme } = useTheme()
 
   return (
-    <div className="absolute right-3">
+    <div className="absolute right-6">
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon">

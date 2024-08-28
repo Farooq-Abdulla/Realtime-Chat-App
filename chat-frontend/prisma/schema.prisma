@@ -19,7 +19,26 @@ model User {
  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  receivedRequests FriendRequest[] @relation("ReceivedRequests")
+
+  sentRequests FriendRequest[] @relation("SentRequests")
 }
+
+model FriendRequest {
+  id         String   @id @default(cuid())
+  senderId   String
+  sender     User     @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User     @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+  status     String   @default("pending") // e.g., 'pending', 'accepted', 'declined'
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([senderId, receiverId]) 
+}
+
+
  
 model Account {
   userId            String
