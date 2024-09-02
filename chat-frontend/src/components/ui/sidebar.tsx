@@ -182,7 +182,7 @@ export const SidebarLink = ({
       {...props}
     >
       <div className="relative flex items-center">
-        {link.label === "Requests" ? (
+        {link.label === "Requests" && link.requests! >0 ? (
           <Badge content={link.requests!} position="top-right">
             {link.icon}
           </Badge>

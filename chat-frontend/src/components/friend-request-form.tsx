@@ -6,19 +6,26 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
+import {
   Form,
   FormControl,
   FormDescription,
   FormField,
   FormItem,
-  FormLabel,
-  FormMessage,
+  FormMessage
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import CheckIfValidUser from "@/server-actions/check-if-valid-user";
 import SendFriendRequest from "@/server-actions/send-friend-request";
-import { Loader2 } from "lucide-react";
+import { Loader2, UserPlus } from "lucide-react";
 import { useToast } from "./ui/use-toast";
+
 
 // Define the schema
 export const formSchema = z.object({
@@ -65,15 +72,44 @@ export default function FriendRequestForm() {
 
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-2/4 mx-auto my-40">
+    // <Form {...form}>
+    //   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-2/4 mx-auto my-40">
+
+    //     <FormField
+    //       control={form.control}
+    //       name="email"
+    //       render={({ field }) => (
+    //         <FormItem>
+    //           <FormLabel className="text-3xl">Add a new Friend</FormLabel>
+    //           <FormControl>
+    //             <Input placeholder="abc@gmail.com" {...field} />
+    //           </FormControl>
+    //           <FormDescription> Enter the email that you&apos;d like to connect with</FormDescription>
+    //           <FormMessage />
+    //         </FormItem>
+    //       )}
+    //     />
+
+    //     <Button type="submit" disabled={form.formState.isSubmitting}>
+    //       Submit {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+    //     </Button>
+    //   </form>
+    // </Form>
+    <Card className="w-full max-w-2xl mx-auto dark:bg-inherit dark:border-none shadow-lg ">
+      <CardHeader>
+        <CardTitle>Add a new Friend</CardTitle>
+        <CardDescription>Send a chat request to a new friend</CardDescription>
+      </CardHeader>
+      <CardContent>
+      <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8  ">
 
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-3xl">Add a new Friend</FormLabel>
+              {/* <FormLabel className="text-3xl">Add a new Friend</FormLabel> */}
               <FormControl>
                 <Input placeholder="abc@gmail.com" {...field} />
               </FormControl>
@@ -84,9 +120,13 @@ export default function FriendRequestForm() {
         />
 
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          Submit {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <UserPlus className="h-4 w-4 mr-2" />
+        Send Request {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         </Button>
       </form>
     </Form>
+      </CardContent>
+    </Card>
+
   );
 }
