@@ -6,35 +6,41 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, X } from "lucide-react";
-import { useState } from "react";
+import GetAllReceivedRequests from "@/server-actions/get-received-requests";
+import GetAllSentRequests from "@/server-actions/get-sent-requests";
+import { useQuery } from "@tanstack/react-query";
+import { Check, UserPlus, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAcceptFriendRequest } from "../../lib/hooks/useAcceptFriendRequest";
+import { useRejectFriendRequest } from "../../lib/hooks/useRejectFriendRequest";
 
-export default function ChatRequestsComponent() {
-  const [incomingRequests, setIncomingRequests] = useState([
-    { id: 1, name: "Alice Johnson", avatar: "/placeholder.svg?height=40&width=40" },
-    { id: 2, name: "Bob Smith", avatar: "/placeholder.svg?height=40&width=40" },
-    { id: 3, name: "Charlie Brown", avatar: "/placeholder.svg?height=40&width=40" },
+export default function ChatRequestsComponent({ userId }: { userId: string }) {
+  const router = useRouter();
 
-  ])
+  const { data: incomingRequests, isLoading: incomingLoading } = useQuery({
+    queryKey: ["incomingRequests"],
+    queryFn: () => GetAllReceivedRequests(userId!),
+    enabled: !!userId,
+  });
+  const { data: outgoingRequests, isLoading: outgoingLoading } = useQuery({
+    queryKey: ["outgoingRequests"],
+    queryFn: () => GetAllSentRequests(userId!),
+    enabled: !!userId,
+  });
 
-  const [outgoingRequests, setOutgoingRequests] = useState([
-    { id: 4, name: "Diana Prince", avatar: "/placeholder.svg?height=40&width=40", status: "Pending" },
-    { id: 5, name: "Ethan Hunt", avatar: "/placeholder.svg?height=40&width=40", status: "Pending" },
-  ])
+  const { mutate: acceptFriendRequest } = useAcceptFriendRequest(userId);
+  const { mutate: rejectFriendRequest } = useRejectFriendRequest(userId);
 
-  const handleAccept = (id: number) => {
-    setIncomingRequests(incomingRequests.filter(request => request.id !== id))
-    // Add logic to handle accepted request
+  const handleAccept = (id: string) => {
+    acceptFriendRequest(id);
   }
 
-  const handleReject = (id: number) => {
-    setIncomingRequests(incomingRequests.filter(request => request.id !== id))
-    // Add logic to handle rejected request
+  const handleReject = (id: string) => {
+    rejectFriendRequest(id)
   }
 
-  const handleCancelOutgoing = (id: number) => {
-    setOutgoingRequests(outgoingRequests.filter(request => request.id !== id))
-    // Add logic to handle cancelling outgoing request
+  const handleCancelOutgoing = (id: string) => {
+    rejectFriendRequest(id);
   }
 
   return (
@@ -51,46 +57,69 @@ export default function ChatRequestsComponent() {
           </TabsList>
           <TabsContent value="incoming">
             <ScrollArea className="h-[300px] w-full rounded-md border p-4">
-              {incomingRequests.map((request) => (
-                <div key={request.id} className="flex items-center justify-between shadow-md py-4 border-b last:border-b-0">
-                  <div className="flex items-center space-x-4">
-                    <Avatar>
-                      <AvatarImage src={request.avatar} alt={request.name} />
-                      <AvatarFallback>{request.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{request.name}</span>
-                  </div>
-                  <div className="space-x-2">
-                    <Button size="sm" onClick={() => handleAccept(request.id)}>
-                      <Check className="mr-2 h-4 w-4" /> Accept
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleReject(request.id)}>
-                      <X className="mr-2 h-4 w-4" /> Reject
-                    </Button>
-                  </div>
+              {incomingLoading ? (
+                <p>Loading incoming requests...</p>
+              ) : incomingRequests?.length === 0 ? (
+                <div>
+                  <p>No incoming requests found.</p>
                 </div>
-              ))}
+              ) : (
+                incomingRequests?.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between shadow-md py-4 border-b last:border-b-0"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <Avatar>
+                        <AvatarImage src={request.avatar!} alt={request.name!} />
+                        <AvatarFallback>{request?.name?.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{request.name}</span>
+                    </div>
+                    <div className="space-x-2">
+                      <Button size="sm" onClick={() => handleAccept(request.id)}>
+                        <Check className="mr-2 h-4 w-4" /> Accept
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleReject(request.id)}>
+                        <X className="mr-2 h-4 w-4" /> Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
             </ScrollArea>
           </TabsContent>
           <TabsContent value="outgoing">
             <ScrollArea className="h-[300px] w-full rounded-md border p-4">
-              {outgoingRequests.map((request) => (
-                <div key={request.id} className="flex items-center justify-between shadow-md py-4 border-b last:border-b-0">
-                  <div className="flex items-center space-x-4">
-                    <Avatar>
-                      <AvatarImage src={request.avatar} alt={request.name} />
-                      <AvatarFallback>{request.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{request.name}</span>
-                  </div>
-                  <div className="space-x-2">
-                    <span className="text-sm text-muted-foreground mr-2">{request.status}</span>
-                    <Button size="sm" variant="outline" onClick={() => handleCancelOutgoing(request.id)}>
-                      Cancel
-                    </Button>
-                  </div>
+              {outgoingLoading ? (
+                <p>Loading outgoing requests...</p>
+              ) : outgoingRequests?.length === 0 ? (
+                <div className="flex justify-center items-center gap-3">
+                  <p>No outgoing requests found.</p>
+                  <Button onClick={() => router.push("/dashboard")}><UserPlus className="h-4 w-4 mr-2" />Send one </Button>
                 </div>
-              ))}
+              ) : (
+                outgoingRequests?.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between shadow-md py-4 border-b last:border-b-0"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <Avatar>
+                        <AvatarImage src={request.avatar} alt={request.name!} />
+                        <AvatarFallback>{request?.name?.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{request.name}</span>
+                    </div>
+                    <div className="space-x-2">
+                      <span className="text-sm text-muted-foreground mr-2">{request.status}</span>
+                      <Button size="sm" variant="outline" onClick={() => handleCancelOutgoing(request.id)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
             </ScrollArea>
           </TabsContent>
         </Tabs>

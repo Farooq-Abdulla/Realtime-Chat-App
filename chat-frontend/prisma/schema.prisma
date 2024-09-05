@@ -23,6 +23,9 @@ model User {
   receivedRequests FriendRequest[] @relation("ReceivedRequests")
 
   sentRequests FriendRequest[] @relation("SentRequests")
+
+  friends1   Friend[] @relation("UserFriends1")
+  friends2   Friend[] @relation("UserFriends2")
 }
 
 model FriendRequest {
@@ -38,7 +41,16 @@ model FriendRequest {
   @@unique([senderId, receiverId]) 
 }
 
-
+model Friend {
+  id         String   @id @default(cuid())
+  user1Id    String
+  user1      User     @relation("UserFriends1", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2Id    String
+  user2      User     @relation("UserFriends2", fields: [user2Id], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  
+  @@unique([user1Id, user2Id])
+}
  
 model Account {
   userId            String
