@@ -1,12 +1,15 @@
 import FriendRequestForm from "@/components/friend-request-form";
 import ListOfFriends from "@/components/list-of-friends";
+import getServerSession from "../../../../lib/getServerSession";
 
 export default async function Dashboard() {
+    const session= await getServerSession();
+    const userId= session?.user?.id
 
     return (
         <div>
                 <FriendRequestForm />
-                <ListOfFriends/>
+                <ListOfFriends userId={userId!}/>
             </div>
     );
 };
