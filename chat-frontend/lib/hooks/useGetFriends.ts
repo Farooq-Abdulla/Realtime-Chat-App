@@ -1,16 +1,24 @@
 import { getFriends } from '@/server-actions/get-friends';
 import { useQuery } from '@tanstack/react-query';
-import useSocket from './useSocket';
-
-
+import { useCallback } from 'react';
+import { useSocket } from '../global-socket-provider';
 
 export const useGetFriends = (userId: string) => {
-    const { onlineUsers } = useSocket(userId);
+  const { onlineUsers, isConnected } = useSocket();
 
-    return useQuery({
-        queryKey: ['friends', userId],
-        queryFn: () => getFriends(userId, onlineUsers),
-        enabled: onlineUsers.size > 0, 
-        staleTime: 1000 * 60 * 5
-    });
+  const fetchFriends = useCallback(async () => {
+    const friends = await getFriends(userId);
+    return friends.map(friend => ({
+      ...friend,
+      status: onlineUsers.get(friend.id) ? 'online' : 'offline'
+    }));
+  }, [userId, onlineUsers]);
+
+  return useQuery({
+    queryKey: ['friends', userId],
+    queryFn: fetchFriends,
+    enabled: isConnected && onlineUsers.size > 0,
+    staleTime: Infinity, // Set staleTime to prevent unnecessary refetches
+    refetchOnWindowFocus: false, // Optional: Disable refetching on window focus
+  });
 };

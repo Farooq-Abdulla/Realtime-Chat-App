@@ -1,33 +1,53 @@
 import express from "express";
 import { createServer } from "http";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
+const io: Server = new Server(httpServer, {
     cors: {
         origin: "http://localhost:3000",
         methods: ["GET", "POST"],
     }
 });
 
-const onlineUsers = new Map<string, string>();
+type UserStatus = boolean;
 
-io.on('connection', (socket) => {
-    socket.on('userConnected', (userId) => {
-        onlineUsers.set(userId, socket.id);
-        // console.log(`Emitting statusUpdate for userId: ${userId}`);
-        console.log(onlineUsers)
-        io.emit('statusUpdate', { userId, status: 'online' });
+const onlineUsers: Map<string, UserStatus> = new Map();
+const userSockets: Map<string, string> = new Map(); 
+
+function emitOnlineUsers(): void {
+    io.emit('onlineUsersUpdate', Array.from(onlineUsers.entries()));
+}
+
+io.on('connection', (socket: Socket) => {
+
+    socket.on('userConnected', (userId: string) => {
+        console.log(`User connected: ${userId}`);
+        onlineUsers.set(userId, true);
+        userSockets.set(userId, socket.id);
+        emitOnlineUsers();
     });
+    socket.on('userDisconnected', (userId: string) => {
+        console.log(`User disconnected: ${userId}`);
+        onlineUsers.delete(userId);
+        userSockets.delete(userId);
+        emitOnlineUsers();
+    });
+
     socket.on('disconnect', () => {
-        for (let [userId, socketId] of onlineUsers.entries()) {
+        console.log('Client disconnected');
+        let disconnectedUserId: string | undefined;
+        for (const [userId, socketId] of userSockets.entries()) {
             if (socketId === socket.id) {
-                onlineUsers.delete(userId);
-                console.log(`Disconnecting - Emitting statusUpdate for userId: ${userId}`);
-                io.emit('statusUpdate', { userId, status: 'offline' });
+                disconnectedUserId = userId;
                 break;
             }
+        }
+        if (disconnectedUserId) {
+            onlineUsers.delete(disconnectedUserId);
+            userSockets.delete(disconnectedUserId);
+            emitOnlineUsers();
         }
     });
 });
