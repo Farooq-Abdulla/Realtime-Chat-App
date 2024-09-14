@@ -210,14 +210,14 @@ export default function ChatWindow({ userId, chatId }: { userId: string , chatId
               <h2 className="font-semibold text-gray-800 dark:text-gray-200">{selectedContact.name}</h2>
             </div>
             <ScrollArea className="flex-grow p-4 bg-white dark:bg-gray-900">
-              {messages?.sort((a,b)=>new Date(a.createdAt)?.getTime()-new Date(b.createdAt)?.getTime())?.map((message) => (
+              {messages?.filter((msg)=> msg.senderId===selectedContact.id || msg.receiverId===selectedContact.id)?.sort((a,b)=>new Date(a.createdAt)?.getTime()-new Date(b.createdAt)?.getTime())?.map((message) => (
                 <div key={message.id} className={`flex ${message.senderId === userId ? "justify-end" : "justify-start"} mb-4`}>
                   <div className={`max-w-[70%] rounded-lg p-3 ${message.senderId === userId
                       ? "bg-blue-600 text-white"
                       : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                     }`}>
                     <p>{message.content}</p>
-                    <p className="text-xs mt-1 opacity-70">{message.createdAt.toLocaleTimeString()}</p>
+                    <p className="text-xs mt-1 opacity-70">{new Date(message.createdAt).toLocaleTimeString()}</p>
                   </div>
                 </div>
               ))}
@@ -228,7 +228,7 @@ export default function ChatWindow({ userId, chatId }: { userId: string , chatId
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type a message..."
-                className="flex-1 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                className="flex-1 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 overflow-hidden"
               />
               <Button type="submit" size="icon" className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Send className="h-4 w-4" />
