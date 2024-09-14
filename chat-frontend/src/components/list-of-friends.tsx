@@ -13,6 +13,7 @@ function ListOfFriends({ userId }: { userId: string }) {
 
   if (isLoading) return <p>Loading friends...</p>;
   if (error) return <p>Error loading friends.</p>;
+  // console.log(friends?.map((friend)=>console.log(friend.avatar)));
 
   const handleUnfriend = (id: string) => {
     // Add unfriend logic here, for example, removing the friend from the list
@@ -29,7 +30,7 @@ function ListOfFriends({ userId }: { userId: string }) {
           {friends?.map((friend) => (
             <li key={friend.id} className="p-4 hover:bg-accent transition duration-150 ease-in-out">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-4 cursor-pointer">
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={friend.avatar} alt={friend.name} />
                     <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>

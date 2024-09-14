@@ -27,7 +27,7 @@ import { Loader2, UserPlus } from "lucide-react";
 import { useToast } from "./ui/use-toast";
 
 
-// Define the schema
+
 export const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
 });
@@ -72,29 +72,6 @@ export default function FriendRequestForm() {
 
 
   return (
-    // <Form {...form}>
-    //   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 w-2/4 mx-auto my-40">
-
-    //     <FormField
-    //       control={form.control}
-    //       name="email"
-    //       render={({ field }) => (
-    //         <FormItem>
-    //           <FormLabel className="text-3xl">Add a new Friend</FormLabel>
-    //           <FormControl>
-    //             <Input placeholder="abc@gmail.com" {...field} />
-    //           </FormControl>
-    //           <FormDescription> Enter the email that you&apos;d like to connect with</FormDescription>
-    //           <FormMessage />
-    //         </FormItem>
-    //       )}
-    //     />
-
-    //     <Button type="submit" disabled={form.formState.isSubmitting}>
-    //       Submit {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-    //     </Button>
-    //   </form>
-    // </Form>
     <Card className="w-full max-w-2xl mx-auto dark:bg-inherit dark:border-none shadow-lg ">
       <CardHeader>
         <CardTitle>Add a new Friend</CardTitle>

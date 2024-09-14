@@ -2,21 +2,21 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
- 
+
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
- 
+
 model User {
-  id            String          @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String          @unique
+  email         String    @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
   sessions      Session[]
- 
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -24,8 +24,23 @@ model User {
 
   sentRequests FriendRequest[] @relation("SentRequests")
 
-  friendsInitiated   Friend[] @relation("friendsInitiated")
-  friendsReceived   Friend[] @relation("friendsReceived")
+  friendsInitiated Friend[] @relation("friendsInitiated")
+  friendsReceived  Friend[] @relation("friendsReceived")
+
+  sentMessages     Messages[] @relation("SentMessages")
+  receivedMessages Messages[] @relation("ReceivedMessages")
+}
+
+model Messages {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String
+  status     String   @default("sent") // 'sent', 'delivered', 'read
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
 }
 
 model FriendRequest {
@@ -38,20 +53,20 @@ model FriendRequest {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  @@unique([senderId, receiverId]) 
+  @@unique([senderId, receiverId])
 }
 
 model Friend {
-  id         String   @id @default(cuid())
-  user1Id    String
-  user1      User     @relation("friendsInitiated", fields: [user1Id], references: [id], onDelete: Cascade)
-  user2Id    String
-  user2      User     @relation("friendsReceived", fields: [user2Id], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  
+  id        String   @id @default(cuid())
+  user1Id   String
+  user1     User     @relation("friendsInitiated", fields: [user1Id], references: [id], onDelete: Cascade)
+  user2Id   String
+  user2     User     @relation("friendsReceived", fields: [user2Id], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
   @@unique([user1Id, user2Id])
 }
- 
+
 model Account {
   userId            String
   type              String
@@ -64,29 +79,29 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
- 
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
- 
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
+
   @@id([provider, providerAccountId])
 }
- 
+
 model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
- 
+
 model VerificationToken {
   identifier String
   token      String
   expires    DateTime
- 
+
   @@id([identifier, token])
 }

@@ -10,15 +10,13 @@ export const useGetFriends = (userId: string) => {
     const friends = await getFriends(userId);
     return friends.map(friend => ({
       ...friend,
-      status: onlineUsers.get(friend.id) ? 'online' : 'offline'
+      status: onlineUsers.get(friend.id) ? 'online' : 'offline' as 'online'|'offline'
     }));
   }, [userId, onlineUsers]);
 
   return useQuery({
     queryKey: ['friends', userId],
     queryFn: fetchFriends,
-    enabled: isConnected && onlineUsers.size > 0,
-    staleTime: Infinity, // Set staleTime to prevent unnecessary refetches
-    refetchOnWindowFocus: false, // Optional: Disable refetching on window focus
+    enabled: isConnected && onlineUsers.size > 0
   });
 };

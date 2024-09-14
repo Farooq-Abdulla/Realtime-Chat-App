@@ -3,9 +3,9 @@ import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import {
     IconArrowLeft,
+    IconBrandMessenger,
     IconBrandTabler,
-    IconSettings,
-    IconUserBolt,
+    IconUserBolt
 } from "@tabler/icons-react";
 import { motion } from "framer-motion";
 import { signOut, useSession } from "next-auth/react";
@@ -35,10 +35,10 @@ export default function SidebarDemo({ requests, children }: { requests: number, 
             requests: requests,
         },
         {
-            label: "Settings",
-            onClick: () => router.push("/settings"),
+            label: "Chat",
+            onClick: () => router.push("/chat"),
             icon: (
-                <IconSettings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+                <IconBrandMessenger className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
             ),
         },
         {

@@ -35,6 +35,14 @@ io.on('connection', (socket: Socket) => {
         emitOnlineUsers();
     });
 
+    socket.on("sent-msg", (response)=>{
+        const {senderId, receiverId, content}=response
+        const sendMsgTo=userSockets.get(receiverId)
+        if(sendMsgTo){
+            io.to(sendMsgTo).emit("received-msg", response)
+        }
+    })
+
     socket.on('disconnect', () => {
         console.log('Client disconnected');
         let disconnectedUserId: string | undefined;

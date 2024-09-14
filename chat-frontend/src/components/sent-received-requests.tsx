@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GetAllReceivedRequests from "@/server-actions/get-received-requests";
 import GetAllSentRequests from "@/server-actions/get-sent-requests";
 import { useQuery } from "@tanstack/react-query";
-import { Check, UserPlus, X } from "lucide-react";
+import { Check, Loader2, UserPlus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAcceptFriendRequest } from "../../lib/hooks/useAcceptFriendRequest";
 import { useRejectFriendRequest } from "../../lib/hooks/useRejectFriendRequest";
@@ -28,8 +28,8 @@ export default function ChatRequestsComponent({ userId }: { userId: string }) {
     enabled: !!userId,
   });
 
-  const { mutate: acceptFriendRequest } = useAcceptFriendRequest(userId);
-  const { mutate: rejectFriendRequest } = useRejectFriendRequest(userId);
+  const { mutate: acceptFriendRequest, isPending:AcceptReqLoading} = useAcceptFriendRequest(userId);
+  const { mutate: rejectFriendRequest, isPending:RejectReqLoading } = useRejectFriendRequest(userId);
 
   const handleAccept = (id: string) => {
     acceptFriendRequest(id);
@@ -78,10 +78,10 @@ export default function ChatRequestsComponent({ userId }: { userId: string }) {
                     </div>
                     <div className="space-x-2">
                       <Button size="sm" onClick={() => handleAccept(request.id)}>
-                        <Check className="mr-2 h-4 w-4" /> Accept
+                        <Check className="mr-2 h-4 w-4" /> Accept {AcceptReqLoading &&<Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => handleReject(request.id)}>
-                        <X className="mr-2 h-4 w-4" /> Reject
+                        <X className="mr-2 h-4 w-4" /> Reject {RejectReqLoading&&<Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       </Button>
                     </div>
                   </div>
@@ -114,7 +114,7 @@ export default function ChatRequestsComponent({ userId }: { userId: string }) {
                     <div className="space-x-2">
                       <span className="text-sm text-muted-foreground mr-2">{request.status}</span>
                       <Button size="sm" variant="outline" onClick={() => handleCancelOutgoing(request.id)}>
-                        Cancel
+                        Cancel {RejectReqLoading&&<Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       </Button>
                     </div>
                   </div>
