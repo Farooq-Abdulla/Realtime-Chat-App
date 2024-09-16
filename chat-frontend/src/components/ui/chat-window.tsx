@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useGetMessages } from "@/lib/hooks/useGetMessages"
 import { useSendMessages } from "@/lib/hooks/useSendMessage"
+import UpdateMessageStatus from "@/server-actions/update-msg-status"
 import { Messages } from "@prisma/client"
+import { IconCheck, IconChecks } from "@tabler/icons-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { Menu, Plus, Search, Send, X } from "lucide-react"
-import { useRouter } from "next/navigation"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSocket } from "../../../lib/global-socket-provider"
 import { useGetFriends } from "../../../lib/hooks/useGetFriends"
@@ -21,13 +22,13 @@ interface Contact {
 }
 
 export default function ChatWindow({ userId, chatId }: { userId: string , chatId?:string}) {
-  const router= useRouter();
   const queryClient=useQueryClient();
 
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [newMessage, setNewMessage] = useState("")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const [isAtBottom, setIsAtBottom]=useState(false)
 
   const sidebarRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -38,21 +39,35 @@ export default function ChatWindow({ userId, chatId }: { userId: string , chatId
   if (isLoading) <p>Loading ...</p>
   const {mutate}=useSendMessages(userId, selectedContact?.id!)
   const {data:messages, isFetching} = useGetMessages(userId, selectedContact?.id!);
-  if(isFetching){
-    console.log("Query is refetching...");
-  }
+  // if(isFetching){
+  //   console.log("Query is refetching...");
+  // }
+  useEffect(()=>{
+    const arr=messages?.filter((message)=> message.senderId===userId).filter((message)=>message.status==='sent')??[]
+    if(arr?.length>0){
+      arr.forEach(async(message)=> onlineUsers.has(message.receiverId)? await UpdateMessageStatus(message.id, "delivered"):null)
+      queryClient.invalidateQueries({queryKey:["messages", userId, selectedContact?.id]})
+    }
+  }, [messages, onlineUsers, queryClient, selectedContact?.id, userId])
 
+  // console.log(messages?.filter(message=> message.status==='read'))
   useEffect(()=>{
     if(!socket) return;
     socket?.on("received-msg", (response:Messages)=>{
-      console.log("response i recived :" , response)
+      // console.log("response i recived :" , response)
       // const updatedResponse={...response, createdAt: new Date(response.createdAt), updatedAt: new Date(response.updatedAt)}
       queryClient.setQueryData(['messages', userId, selectedContact?.id], (oldMsgs:Messages[])=>{
         return oldMsgs?[...oldMsgs, response]:[]
       })
     });
+    socket?.on("read-msg", (respone: Messages[])=> {
+      // console.log("change to read", respone)
+      respone.forEach(async(message)=> await UpdateMessageStatus(message.id, "read"))
+      queryClient.invalidateQueries({queryKey:["messages", userId, selectedContact?.id]})
+    });
     return ()=>{
-      socket.off("received-msg")
+      socket.off("received-msg");
+      socket.off("read-msg")
     }
   }, [queryClient, selectedContact?.id, socket, userId])
   // console.log(messages);
@@ -72,7 +87,17 @@ export default function ChatWindow({ userId, chatId }: { userId: string , chatId
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    setIsAtBottom(true)
   }, [messages])
+
+  useEffect(()=>{
+    const arr=messages?.filter((message)=> message.senderId===selectedContact?.id).filter((message)=> message.status!=='read')||[]
+    if(isAtBottom && arr.length>0){
+      socket?.emit("read-msg", arr, selectedContact?.id)
+      // console.log("i'm in client emit read : ", arr, selectedContact?.name, selectedContact?.id)
+    }
+  },[isAtBottom, messages, selectedContact?.id, selectedContact?.name, socket])
+
 
   const filteredContacts = useMemo(() => {
     return contacts?.filter(contact =>contact.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -102,6 +127,18 @@ export default function ChatWindow({ userId, chatId }: { userId: string , chatId
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(prev => !prev)
   }, [])
+
+
+  const handleScroll=()=>{
+    const chatWindow=document.getElementById('scroll-area');
+
+    const isUserAtBottom=chatWindow? chatWindow?.scrollHeight-chatWindow?.scrollTop===chatWindow?.clientHeight:false
+    if(isUserAtBottom && !isAtBottom){
+      setIsAtBottom(true)
+    }else if(!isUserAtBottom){
+        setIsAtBottom(false)
+    }
+  }
 
   return (
     <div className="flex h-full bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
@@ -209,7 +246,7 @@ export default function ChatWindow({ userId, chatId }: { userId: string , chatId
             <div className="hidden md:block p-4 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
               <h2 className="font-semibold text-gray-800 dark:text-gray-200">{selectedContact.name}</h2>
             </div>
-            <ScrollArea className="flex-grow p-4 bg-white dark:bg-gray-900">
+            <ScrollArea className="flex-grow p-4 bg-white dark:bg-gray-900" id="scroll-area">
               {messages?.filter((msg)=> msg.senderId===selectedContact.id || msg.receiverId===selectedContact.id)?.sort((a,b)=>new Date(a.createdAt)?.getTime()-new Date(b.createdAt)?.getTime())?.map((message) => (
                 <div key={message.id} className={`flex ${message.senderId === userId ? "justify-end" : "justify-start"} mb-4`}>
                   <div className={`max-w-[70%] rounded-lg p-3 ${message.senderId === userId
@@ -217,7 +254,10 @@ export default function ChatWindow({ userId, chatId }: { userId: string , chatId
                       : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                     }`}>
                     <p>{message.content}</p>
-                    <p className="text-xs mt-1 opacity-70">{new Date(message.createdAt).toLocaleTimeString()}</p>
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs mt-1 opacity-70">{new Date(message.createdAt).toLocaleTimeString()}</p>
+                      {message.senderId===userId ? (message.status==='read'? <IconChecks stroke={1} color="var(--black)" className="size-4 opacity-70" /> : (message.status==='delivered'? <IconChecks stroke={1} className="size-4 opacity-70" />: <IconCheck stroke={1} className="size-4 opacity-70" />)): null }
+                    </div>
                   </div>
                 </div>
               ))}

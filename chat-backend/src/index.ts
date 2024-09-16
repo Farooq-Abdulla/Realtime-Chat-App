@@ -13,6 +13,16 @@ const io: Server = new Server(httpServer, {
 
 type UserStatus = boolean;
 
+interface IMessage {
+    id: string;
+    senderId: string;
+    receiverId: string;
+    content: string;
+    status: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
 const onlineUsers: Map<string, UserStatus> = new Map();
 const userSockets: Map<string, string> = new Map(); 
 
@@ -41,6 +51,14 @@ io.on('connection', (socket: Socket) => {
         if(sendMsgTo){
             io.to(sendMsgTo).emit("received-msg", response)
         }
+    })
+
+    socket.on("read-msg", (response:IMessage[], id:string)=>{
+        response.forEach((message)=> message.status="read")
+        // console.log(id);
+        const sendMsgTo=userSockets.get(id)
+        if(sendMsgTo) io.to(sendMsgTo).emit("read-msg", response)
+        // console.log("sending read response", response);
     })
 
     socket.on('disconnect', () => {
