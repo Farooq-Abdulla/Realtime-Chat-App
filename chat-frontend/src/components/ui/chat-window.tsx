@@ -21,14 +21,14 @@ interface Contact {
   status: "online" | "offline";
 }
 
-export default function ChatWindow({ userId, chatId }: { userId: string , chatId?:string}) {
-  const queryClient=useQueryClient();
+export default function ChatWindow({ userId, chatId }: { userId: string, chatId?: string }) {
+  const queryClient = useQueryClient();
 
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [newMessage, setNewMessage] = useState("")
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const [isAtBottom, setIsAtBottom]=useState(false)
+  const [isAtBottom, setIsAtBottom] = useState(false)
 
   const sidebarRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -37,41 +37,74 @@ export default function ChatWindow({ userId, chatId }: { userId: string , chatId
   const { data: contacts, isLoading } = useGetFriends(userId)
   const { onlineUsers, socket } = useSocket();
   if (isLoading) <p>Loading ...</p>
-  const {mutate}=useSendMessages(userId, selectedContact?.id!)
-  const {data:messages, isFetching} = useGetMessages(userId, selectedContact?.id!);
-  // if(isFetching){
-  //   console.log("Query is refetching...");
-  // }
-  useEffect(()=>{
-    const arr=messages?.filter((message)=> message.senderId===userId).filter((message)=>message.status==='sent')??[]
-    if(arr?.length>0){
-      arr.forEach(async(message)=> onlineUsers.has(message.receiverId)? await UpdateMessageStatus(message.id, "delivered"):null)
-      queryClient.invalidateQueries({queryKey:["messages", userId, selectedContact?.id]})
-    }
-  }, [messages, onlineUsers, queryClient, selectedContact?.id, userId])
+  const { mutate } = useSendMessages(userId, selectedContact?.id!)
+  const { data: messages, isFetching } = useGetMessages(userId, selectedContact?.id!);
 
-  // console.log(messages?.filter(message=> message.status==='read'))
-  useEffect(()=>{
-    if(!socket) return;
-    socket?.on("received-msg", (response:Messages)=>{
-      // console.log("response i recived :" , response)
-      // const updatedResponse={...response, createdAt: new Date(response.createdAt), updatedAt: new Date(response.updatedAt)}
-      queryClient.setQueryData(['messages', userId, selectedContact?.id], (oldMsgs:Messages[])=>{
-        return oldMsgs?[...oldMsgs, response]:[]
-      })
+
+  //when i send a msg , 3 things happen. 
+  // 1) store in the DB, while storing in DB check if the user is online
+  // 2) emit to WSS 
+
+
+  // 1)
+  const handleSendMessage = useCallback((e: React.FormEvent) => {
+    e.preventDefault()
+    if (newMessage.trim() && selectedContact) {
+      mutate({ senderId: userId, receiverId: selectedContact.id, content: newMessage ,online: onlineUsers.has(selectedContact.id)})
+      setNewMessage("")
+    }
+  }, [newMessage, selectedContact, mutate, userId, onlineUsers])
+
+  
+
+  // whenever i receive a msg , this means , the msg is stored in DB and WSS is emitting "recived-msg"
+  // I have to emit to WSS that i've read the msg. so that there is an update in DB and UI
+
+  useEffect(() => {
+    const arr = messages?.filter((message) => message.senderId === selectedContact?.id).filter((message) => message.status !== 'read') || []
+    if (isAtBottom && arr.length > 0) {
+      socket?.emit("read-msg", arr, selectedContact?.id)
+    }
+  }, [isAtBottom, messages, selectedContact?.id, selectedContact?.name, socket])
+
+
+
+  
+  useEffect(() => {
+    if (!socket) return;
+    socket?.on("received-msg", (response: Messages) => {
+      // queryClient.setQueryData(['messages', userId, selectedContact?.id], (oldMsgs: Messages[]) => {
+      //   const newMsgs= oldMsgs ? [...oldMsgs, response] : []
+      //   console.log(newMsgs)
+      //   return newMsgs
+      // })
+      queryClient.invalidateQueries({ queryKey: ["messages", userId, selectedContact?.id] })
     });
-    socket?.on("read-msg", (respone: Messages[])=> {
-      // console.log("change to read", respone)
-      respone.forEach(async(message)=> await UpdateMessageStatus(message.id, "read"))
-      queryClient.invalidateQueries({queryKey:["messages", userId, selectedContact?.id]})
+
+
+    socket?.on("read-msg", (response: Messages[]) => {
+      response.forEach(async (message) => await UpdateMessageStatus(message.id, "read"))
+      // queryClient.invalidateQueries({ queryKey: ["messages", userId, selectedContact?.id] })
+      queryClient.setQueryData(['messages', userId, selectedContact?.id], (oldMsgs: Messages[]) => {
+        return oldMsgs.map(msg => {
+          const foundMessage = response.find(res => res.id === msg.id);
+          return foundMessage ? { ...msg, status: 'read' } : { ...msg };
+        });
+      });
     });
-    return ()=>{
+
+
+    return () => {
       socket.off("received-msg");
       socket.off("read-msg")
     }
-  }, [queryClient, selectedContact?.id, socket, userId])
-  // console.log(messages);
 
+  }, [queryClient, selectedContact?.id, socket, userId])
+
+
+
+
+  {/* Mobile Sidebar */}
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
@@ -85,60 +118,25 @@ export default function ChatWindow({ userId, chatId }: { userId: string , chatId
     }
   }, [])
 
+
+
+  // scroll down to bottom , when opened a chat 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
     setIsAtBottom(true)
-  }, [messages])
+  }, [messages, setIsAtBottom])
 
-  useEffect(()=>{
-    const arr=messages?.filter((message)=> message.senderId===selectedContact?.id).filter((message)=> message.status!=='read')||[]
-    if(isAtBottom && arr.length>0){
-      socket?.emit("read-msg", arr, selectedContact?.id)
-      // console.log("i'm in client emit read : ", arr, selectedContact?.name, selectedContact?.id)
-    }
-  },[isAtBottom, messages, selectedContact?.id, selectedContact?.name, socket])
+  
 
 
   const filteredContacts = useMemo(() => {
-    return contacts?.filter(contact =>contact.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    return contacts?.filter(contact => contact.name.toLowerCase().includes(searchQuery.toLowerCase()))
   }, [contacts, searchQuery])
-
-  const handleSendMessage = useCallback((e: React.FormEvent) => {
-    e.preventDefault()
-    if (newMessage.trim() && selectedContact) {
-      mutate({senderId:userId, receiverId:selectedContact.id, content:newMessage})
-      setNewMessage("")
-    }
-  }, [newMessage, selectedContact, userId, mutate])
-
-  // const handleAddContact = useCallback(() => {
-  //   if (newContactName.trim()) {
-  //     const newContact: Contact = { 
-  //       id: contacts?.length + 1, 
-  //       name: newContactName, 
-  //       avatar: `/placeholder.svg?height=32&width=32&text=${newContactName.charAt(0)}`,
-  //       status: "offline"
-  //     }
-  //     setContacts(prevContacts => [...prevContacts, newContact])
-  //     setNewContactName("")
-  //   }
-  // }, [newContactName, contacts.length])
 
   const toggleSidebar = useCallback(() => {
     setIsSidebarOpen(prev => !prev)
   }, [])
 
-
-  const handleScroll=()=>{
-    const chatWindow=document.getElementById('scroll-area');
-
-    const isUserAtBottom=chatWindow? chatWindow?.scrollHeight-chatWindow?.scrollTop===chatWindow?.clientHeight:false
-    if(isUserAtBottom && !isAtBottom){
-      setIsAtBottom(true)
-    }else if(!isUserAtBottom){
-        setIsAtBottom(false)
-    }
-  }
 
   return (
     <div className="flex h-full bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
@@ -247,16 +245,16 @@ export default function ChatWindow({ userId, chatId }: { userId: string , chatId
               <h2 className="font-semibold text-gray-800 dark:text-gray-200">{selectedContact.name}</h2>
             </div>
             <ScrollArea className="flex-grow p-4 bg-white dark:bg-gray-900" id="scroll-area">
-              {messages?.filter((msg)=> msg.senderId===selectedContact.id || msg.receiverId===selectedContact.id)?.sort((a,b)=>new Date(a.createdAt)?.getTime()-new Date(b.createdAt)?.getTime())?.map((message) => (
+              {messages?.filter((msg) => msg.senderId === selectedContact.id || msg.receiverId === selectedContact.id)?.sort((a, b) => new Date(a.createdAt)?.getTime() - new Date(b.createdAt)?.getTime())?.map((message) => (
                 <div key={message.id} className={`flex ${message.senderId === userId ? "justify-end" : "justify-start"} mb-4`}>
                   <div className={`max-w-[70%] rounded-lg p-3 ${message.senderId === userId
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                     }`}>
                     <p>{message.content}</p>
                     <div className="flex justify-between items-center">
                       <p className="text-xs mt-1 opacity-70">{new Date(message.createdAt).toLocaleTimeString()}</p>
-                      {message.senderId===userId ? (message.status==='read'? <IconChecks stroke={1} color="var(--black)" className="size-4 opacity-70" /> : (message.status==='delivered'? <IconChecks stroke={1} className="size-4 opacity-70" />: <IconCheck stroke={1} className="size-4 opacity-70" />)): null }
+                      {message.senderId === userId ? (message.status === 'read' ? <IconChecks stroke={1} color="var(--black)" className="size-4 opacity-70" /> : (message.status === 'delivered' ? <IconChecks stroke={1} className="size-4 opacity-70" /> : <IconCheck stroke={1} className="size-4 opacity-70" />)) : null}
                     </div>
                   </div>
                 </div>

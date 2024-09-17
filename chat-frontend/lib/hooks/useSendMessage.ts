@@ -5,6 +5,7 @@ export interface IPostMessageType{
     senderId:string,
     receiverId:string,
     content:string
+    online:boolean
 }
 
 export const  useSendMessages=(userId:string, senderId:string)=> {
