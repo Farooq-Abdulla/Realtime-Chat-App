@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import useCheckReceivedMessages from "@/lib/hooks/useCheckReceivedMsgsCount"
 import { useGetMessages } from "@/lib/hooks/useGetMessages"
 import { useSendMessages } from "@/lib/hooks/useSendMessage"
 import UpdateMessageStatus from "@/server-actions/update-msg-status"
@@ -13,8 +14,9 @@ import { Menu, Plus, Search, Send, X } from "lucide-react"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSocket } from "../../../lib/global-socket-provider"
 import { useGetFriends } from "../../../lib/hooks/useGetFriends"
+import { Badge } from "./badge"
 
-interface Contact {
+export interface Contact {
   id: string;
   name: string;
   avatar: string;
@@ -29,6 +31,8 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [isAtBottom, setIsAtBottom] = useState(false)
+  // const [unreadMsgs, setUnreadMsgs]=  useState<Record<string,number>>({})
+  // console.log(unreadMsgs);
 
   const sidebarRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -39,6 +43,7 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
   if (isLoading) <p>Loading ...</p>
   const { mutate } = useSendMessages(userId, selectedContact?.id!)
   const { data: messages, isFetching } = useGetMessages(userId, selectedContact?.id!);
+  const {data:unreadMsgs}=useCheckReceivedMessages(userId)
 
 
   //when i send a msg , 3 things happen. 
@@ -64,8 +69,14 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
     const arr = messages?.filter((message) => message.senderId === selectedContact?.id).filter((message) => message.status !== 'read') || []
     if (isAtBottom && arr.length > 0) {
       socket?.emit("read-msg", arr, selectedContact?.id)
+      // setUnreadMsgs((prevUnreadMsgs)=>{
+      //   return {...prevUnreadMsgs, [selectedContact?.id!]:0}
+      // })
+      queryClient.setQueryData(['count',userId], (oldObj:Record<string, number>)=>{
+        return {...oldObj, [selectedContact?.id!]:0}
+      })
     }
-  }, [isAtBottom, messages, selectedContact?.id, selectedContact?.name, socket])
+  }, [isAtBottom, messages, queryClient, selectedContact?.id, selectedContact?.name, socket, userId])
 
 
 
@@ -78,6 +89,19 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
       //   console.log(newMsgs)
       //   return newMsgs
       // })
+
+      //who sent me how many msgs 
+      queryClient.setQueryData(['count', userId], (oldObj:Record<string,number>)=>{
+        const senderId=response.senderId;
+        const currentCount= oldObj[senderId]|0
+        return {...oldObj, [senderId]:currentCount+1}
+      })
+      // setUnreadMsgs((prevUnreadMsgs)=>{
+      //   const senderId=response.senderId;
+      //   const currentCount= prevUnreadMsgs[senderId]|0
+      //   return {...prevUnreadMsgs, [senderId]:currentCount+1}
+      // })
+      
       queryClient.invalidateQueries({ queryKey: ["messages", userId, selectedContact?.id] })
     });
 
@@ -91,6 +115,7 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
           return foundMessage ? { ...msg, status: 'read' } : { ...msg };
         });
       });
+
     });
 
 
@@ -212,7 +237,8 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}</p>
+                  {/* <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}{unreadMsgs[contact.id]>0?unreadMsgs[contact.id]:'' }</p> */}
+                  {(unreadMsgs&& unreadMsgs[contact.id]>0) ? <Badge position="right-side" content={unreadMsgs[contact.id]}><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}</p></Badge>:<p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}</p>}
                   <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Click to chat</p>
                 </div>
                 <div className={`w-2 h-2 rounded-full ${onlineUsers.has(contact.id) ? "bg-green-500" : "bg-gray-500 dark:bg-gray-600"}`} />

@@ -2,6 +2,7 @@
 import { useSession } from 'next-auth/react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { config } from './config';
 
 type UserStatus = boolean;
 type OnlineUsers = Map<string, UserStatus>;
@@ -21,7 +22,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode; userId: strin
   const { status } = useSession();
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3001');
+    const newSocket = io(config.url);
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
