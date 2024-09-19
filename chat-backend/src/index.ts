@@ -1,13 +1,13 @@
 import express from "express";
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
-import { config } from "./config";
-
+import cors=require('cors')
 const app = express();
+app.use(cors());
 const httpServer = createServer(app);
 const io: Server = new Server(httpServer, {
     cors: {
-    origin: config.url,
+    origin: ["http://localhost:3000","https://realtime-chat.101xdev.com/" ],
         methods: ["GET", "POST"],
     }
 });
