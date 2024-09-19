@@ -1,5 +1,5 @@
 const production = {
-    url: ''
+    url: 'https://realtime-chat-app-backend-5e2i.onrender.com'
   };
   const development = {
     url: 'http://localhost:3001'
