@@ -1,12 +1,13 @@
 import express from "express";
 import { createServer } from "http";
 import { Server, Socket } from "socket.io";
+import { config } from "./config";
 
 const app = express();
 const httpServer = createServer(app);
 const io: Server = new Server(httpServer, {
     cors: {
-        origin: "http://localhost:3000",
+    origin: config.url,
         methods: ["GET", "POST"],
     }
 });
