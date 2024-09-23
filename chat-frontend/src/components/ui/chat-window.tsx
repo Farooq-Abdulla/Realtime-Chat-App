@@ -96,18 +96,21 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
         const currentCount= oldObj[senderId]|0
         return {...oldObj, [senderId]:currentCount+1}
       })
+
       // setUnreadMsgs((prevUnreadMsgs)=>{
       //   const senderId=response.senderId;
       //   const currentCount= prevUnreadMsgs[senderId]|0
       //   return {...prevUnreadMsgs, [senderId]:currentCount+1}
       // })
-      
       queryClient.invalidateQueries({ queryKey: ["messages", userId, selectedContact?.id] })
     });
 
 
     socket?.on("read-msg", (response: Messages[]) => {
-      response.forEach(async (message) => await UpdateMessageStatus(message.id, "read"))
+      response.forEach(async (message) => {
+        await UpdateMessageStatus(message.id, "read")
+
+      })
       // queryClient.invalidateQueries({ queryKey: ["messages", userId, selectedContact?.id] })
       queryClient.setQueryData(['messages', userId, selectedContact?.id], (oldMsgs: Messages[]) => {
         return oldMsgs.map(msg => {
