@@ -45,6 +45,8 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
   const { data: messages, isFetching } = useGetMessages(userId, selectedContact?.id!);
   const {data:unreadMsgs}=useCheckReceivedMessages(userId)
 
+  // console.log("online users from chat window", onlineUsers);
+
 
   //when i send a msg , 3 things happen. 
   // 1) store in the DB, while storing in DB check if the user is online
@@ -180,7 +182,7 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
         `}
       >
         <div className="p-4 flex justify-between items-center border-b border-gray-300 dark:border-gray-700">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-200">Contacts</h2>
+          <h2 className="font-semibold text-gray-800 dark:text-gray-200">Chats</h2>
           <div className="flex items-center space-x-2">
             {/* <Popover>
               <PopoverTrigger asChild>

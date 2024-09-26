@@ -36,9 +36,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode; userId: strin
       setIsConnected(false);
     });
 
-    newSocket.on('onlineUsersUpdate', (users: [string, UserStatus][]) => {
-    //   console.log('Online users update:', users);
-      setOnlineUsers(new Map(users));
+    newSocket.on('onlineUsersUpdate', (users: string[]) => {
+      // console.log('Online users update:', users);
+    const allusers=users.map((item)=> [item,true] as [string, boolean])
+      setOnlineUsers(new Map(allusers));
     });
 
 

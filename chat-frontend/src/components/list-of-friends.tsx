@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { UserMinus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { memo } from "react";
 import { useSocket } from "../../lib/global-socket-provider";
 import { useGetFriends } from "../../lib/hooks/useGetFriends";
@@ -10,6 +11,7 @@ import { useGetFriends } from "../../lib/hooks/useGetFriends";
 function ListOfFriends({ userId }: { userId: string }) {
   const { data: friends, isLoading, error } = useGetFriends(userId);
   const { onlineUsers } = useSocket();
+  const router=useRouter();
 
   if (isLoading) return <p>Loading friends...</p>;
   if (error) return <p>Error loading friends.</p>;
@@ -30,7 +32,7 @@ function ListOfFriends({ userId }: { userId: string }) {
           {friends?.map((friend) => (
             <li key={friend.id} className="p-4 hover:bg-accent transition duration-150 ease-in-out">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4 cursor-pointer">
+                <div className="flex items-center space-x-4 cursor-pointer" onClick={()=>router.push('/chat')}>
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={friend.avatar} alt={friend.name} />
                     <AvatarFallback>{friend.name.charAt(0)}</AvatarFallback>

@@ -9,7 +9,6 @@ type Friend = {
 };
 
 export async function getFriends(userId: string): Promise<Friend[]> {
-  console.log('getFriends called for userId:', userId);
   
   const user = await prisma.user.findUnique({
     where: { id: userId },

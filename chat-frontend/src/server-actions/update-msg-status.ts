@@ -12,6 +12,6 @@ export default async function UpdateMessageStatus(id:string, status:string) {
             status: status
         }
     })
-    await redis.hset(`messages:${updatedMsg.senderId}:${id}`, status, 'read')
-    await redis.hset(`messages:${updatedMsg.receiverId}:${id}`, status, 'read')
+    await redis.hset(`messages:${updatedMsg.senderId}:${id}`, 'status', 'read')
+    await redis.hset(`messages:${updatedMsg.receiverId}:${id}`, 'status', 'read')
 }
