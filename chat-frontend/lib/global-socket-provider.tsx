@@ -22,7 +22,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode; userId: strin
   const { status } = useSession();
 
   useEffect(() => {
-    const newSocket = io(config.url);
+    const newSocket = io(config.url!);
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
