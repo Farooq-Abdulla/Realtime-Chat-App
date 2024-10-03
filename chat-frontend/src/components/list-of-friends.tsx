@@ -2,9 +2,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import RemoveFriend from "@/server-actions/remove-friend";
+import { useQueryClient } from "@tanstack/react-query";
 import { UserMinus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { memo } from "react";
+import { memo, useEffect } from "react";
 import { useSocket } from "../../lib/global-socket-provider";
 import { useGetFriends } from "../../lib/hooks/useGetFriends";
 
@@ -12,14 +14,23 @@ function ListOfFriends({ userId }: { userId: string }) {
   const { data: friends, isLoading, error } = useGetFriends(userId);
   const { onlineUsers } = useSocket();
   const router=useRouter();
+  const queryClient=useQueryClient();
+  const {socket}=useSocket()
+  useEffect(()=>{
+    if(!socket) return
+    socket.on('friend_request_accepted/rejected',()=>{
+      console.log("In friend_request_accepted/rejected hook")
+      queryClient.invalidateQueries({queryKey:['friends', userId]})
+    })
+
+    return ()=>{
+      socket.off('friend_request_accepted/rejected')
+    }
+  }, [queryClient, socket, userId])
 
   if (isLoading) return <p>Loading friends...</p>;
   if (error) return <p>Error loading friends.</p>;
   // console.log(friends?.map((friend)=>console.log(friend.avatar)));
-
-  const handleUnfriend = (id: string) => {
-    // Add unfriend logic here, for example, removing the friend from the list
-  };
 
   return (
     <div className="w-full max-w-lg mx-auto mt-10 bg-transparent text-foreground rounded-lg drop-shadow-md hover:drop-shadow-xl overflow-hidden no-visible-scrollbar">
@@ -55,7 +66,12 @@ function ListOfFriends({ userId }: { userId: string }) {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => handleUnfriend(friend.id)}
+                  onClick={async() =>{
+                     await RemoveFriend(userId, friend.id);
+                     console.log("Removing frinedId", friend.id)
+                     socket?.emit('removeFriend', friend.id)
+                     queryClient.invalidateQueries({queryKey:['friends', userId]})
+                    }}
                   className="text-destructive-foreground hover:bg-destructive/90"
                 >
                   <UserMinus className="h-4 w-4 mr-2" />

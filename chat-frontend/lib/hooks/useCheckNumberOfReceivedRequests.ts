@@ -1,3 +1,4 @@
+'use client';
 import CheckNumberOfReceivedRequests from "@/server-actions/check-numberof-received-requests";
 import { useQuery } from "@tanstack/react-query";
 

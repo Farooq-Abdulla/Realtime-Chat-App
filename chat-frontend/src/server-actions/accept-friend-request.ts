@@ -19,7 +19,7 @@ export async function handleAcceptFriendRequest(requestId: string) {
 
   await deleteFriendRequest(requestId);
 
-
+  return {senderId, receiverId}
 
   // Optional: Send notification to the sender
   // await createNotification(senderId, 'Your friend request has been accepted.');

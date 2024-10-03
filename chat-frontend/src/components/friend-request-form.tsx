@@ -21,6 +21,7 @@ import {
   FormMessage
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useSocket } from "@/lib/global-socket-provider";
 import CheckIfValidUser from "@/server-actions/check-if-valid-user";
 import SendFriendRequest from "@/server-actions/send-friend-request";
 import { Loader2, UserPlus } from "lucide-react";
@@ -34,6 +35,7 @@ export const formSchema = z.object({
 
 export default function FriendRequestForm() {
   const {toast}= useToast()
+  const {socket}=useSocket();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -62,6 +64,7 @@ export default function FriendRequestForm() {
             toast({
               description: "Successfully sent the request."
             })
+            socket?.emit('friendRequestSent', res.user.id)
         }
 
     } catch (error: unknown) {

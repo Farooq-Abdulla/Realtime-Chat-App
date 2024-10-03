@@ -16,7 +16,19 @@ import { ReactNode, useState } from "react";
 import { DarkModeToggle } from "./dark-mode-toggle";
 
 
-export default function SidebarDemo({ requests, children }: { requests: number, children: ReactNode }) {
+export default function SidebarDemo({requests, children }: {requests:number, children: ReactNode }) {
+
+    // const {socket}=useSocket();
+    // useEffect(()=>{
+    //     if(!socket) return;
+    //     socket?.on('friendRequest', (count:number)=>{
+
+    //     })
+
+    //     return ()=>{
+    //         socket.off('friendRequest')
+    //     }
+    // },[socket])
     const router = useRouter();
     const links = [
         {
@@ -75,7 +87,7 @@ export default function SidebarDemo({ requests, children }: { requests: number, 
                         <SidebarLink
                             link={{
                                 label: `${user?.name}`,
-                                onClick: () => router.push('/profile'),
+                                onClick: () => router.push('/'),
                                 icon: (
                                     <Image
                                         src={user?.image || '/logo.jpg'}

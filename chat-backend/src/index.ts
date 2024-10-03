@@ -20,9 +20,11 @@ const sub= new Redis(process.env.REDIS_URL!)
 const redis= new Redis(process.env.REDIS_URL!)
 
 sub.subscribe("ONLINE_USERS");
-sub.subscribe("MESSAGE_TRANSFER")
-sub.subscribe("READ_MESSAGE")
-sub.subscribe("DISCONNECT")
+sub.subscribe("MESSAGE_TRANSFER");
+sub.subscribe("READ_MESSAGE");
+sub.subscribe("DISCONNECT");
+sub.subscribe("FRIEND_REQUEST");
+sub.subscribe("ACCEPT/REJECT_FRIEND_REQUEST");
 
 
 type UserStatus = boolean;
@@ -99,6 +101,43 @@ io.on('connection', (socket: Socket) => {
         }
     })
 
+    socket.on("friendRequestSent", async(id:string)=>{
+        const exists=await redis.setnx(`requests:${id}`,1)
+        if(exists===0){
+            const count=await redis.incr(`requests:${id}`)
+            console.log("incremented the count in redis, and now count is ",count)
+        }
+        const sendMsgTo=await redis.hget(`userSockets:${id}`, 'socketId')
+        if(sendMsgTo){
+            await pub.publish('FRIEND_REQUEST', sendMsgTo)
+        }
+    })
+
+    socket.on("friendRequest", async(response)=>{
+        const {senderId, receiverId}=response
+        console.log(senderId, receiverId);
+        await redis.decr(`requests:${receiverId}`)
+        const sendMsgTo=await redis.hget(`userSockets:${receiverId}`, 'socketId')
+        if(sendMsgTo){
+            await pub.publish('FRIEND_REQUEST', sendMsgTo)
+        }
+        setTimeout(async()=>{
+            const id=await redis.hget(`userSockets:${senderId}`, 'socketId')
+            if(id){
+                await pub.publish("ACCEPT/REJECT_FRIEND_REQUEST", id)
+            }
+        },500)
+        
+    })
+    socket.on("removeFriend", async(friendId)=>{
+        console.log('FriendId :',friendId);
+        const sendMsgTo=await redis.hget(`userSockets:${friendId}`, 'socketId')
+        if(sendMsgTo){
+            await pub.publish("ACCEPT/REJECT_FRIEND_REQUEST", sendMsgTo)
+        }
+
+    })
+
     socket.on('disconnect', async() => {
         console.log('Client disconnected');
         // console.log(socket.id);
@@ -145,6 +184,21 @@ sub.on("message", async(channel, message)=>{
             await redis.srem("onlineUsers",userId!)
             await redis.del(`userSockets:${userId}`)
             await redis.hdel(`serverSockets:${serverId}`, message)
+        }
+    }else if(channel==="FRIEND_REQUEST"){
+        const exits=await redis.hexists(`serverSockets:${serverId}`, message)
+        if(exits){
+            const userId=await redis.hget(`serverSockets:${serverId}`, message);
+            const requestCount=await redis.get(`requests:${userId}`)
+            if(Number(requestCount)>=0) {
+                io.to(message).emit('friendRequest', Number(requestCount))
+                console.log("sending the count ", requestCount);
+            }
+        }
+    }else if(channel==="ACCEPT/REJECT_FRIEND_REQUEST"){
+        const exits=await redis.hexists(`serverSockets:${serverId}`, message)
+        if(exits){
+            io.to(message).emit('friend_request_accepted/rejected')
         }
     }
 })
