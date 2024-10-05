@@ -7,7 +7,7 @@ export const useRejectFriendRequest = (userId:string) => {
     const {socket}=useSocket();
     const handleRequest=async(id:string)=>{
       let obj=await declineFriendRequest(id)
-      console.log('From useRejectFriendsReq', obj.senderId, obj.receiverId)
+      // console.log('From useRejectFriendsReq', obj.senderId, obj.receiverId)
       socket?.emit('friendRequest', obj );
     }
   

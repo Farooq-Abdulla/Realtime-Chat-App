@@ -105,7 +105,7 @@ io.on('connection', (socket: Socket) => {
         const exists=await redis.setnx(`requests:${id}`,1)
         if(exists===0){
             const count=await redis.incr(`requests:${id}`)
-            console.log("incremented the count in redis, and now count is ",count)
+            // console.log("incremented the count in redis, and now count is ",count)
         }
         const sendMsgTo=await redis.hget(`userSockets:${id}`, 'socketId')
         if(sendMsgTo){
@@ -115,7 +115,7 @@ io.on('connection', (socket: Socket) => {
 
     socket.on("friendRequest", async(response)=>{
         const {senderId, receiverId}=response
-        console.log(senderId, receiverId);
+        // console.log(senderId, receiverId);
         await redis.decr(`requests:${receiverId}`)
         const sendMsgTo=await redis.hget(`userSockets:${receiverId}`, 'socketId')
         if(sendMsgTo){
@@ -130,7 +130,7 @@ io.on('connection', (socket: Socket) => {
         
     })
     socket.on("removeFriend", async(friendId)=>{
-        console.log('FriendId :',friendId);
+        // console.log('FriendId :',friendId);
         const sendMsgTo=await redis.hget(`userSockets:${friendId}`, 'socketId')
         if(sendMsgTo){
             await pub.publish("ACCEPT/REJECT_FRIEND_REQUEST", sendMsgTo)
@@ -192,7 +192,7 @@ sub.on("message", async(channel, message)=>{
             const requestCount=await redis.get(`requests:${userId}`)
             if(Number(requestCount)>=0) {
                 io.to(message).emit('friendRequest', Number(requestCount))
-                console.log("sending the count ", requestCount);
+                // console.log("sending the count ", requestCount);
             }
         }
     }else if(channel==="ACCEPT/REJECT_FRIEND_REQUEST"){

@@ -1,5 +1,7 @@
 "use client";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
+import { useSocket } from "@/lib/global-socket-provider";
+import { useCheckNumberOfReceivedRequests } from "@/lib/hooks/useCheckNumberOfReceivedRequests";
 import { cn } from "@/lib/utils";
 import {
     IconArrowLeft,
@@ -7,29 +9,38 @@ import {
     IconBrandTabler,
     IconUserBolt
 } from "@tabler/icons-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { DarkModeToggle } from "./dark-mode-toggle";
 
 
-export default function SidebarDemo({requests, children }: {requests:number, children: ReactNode }) {
-
-    // const {socket}=useSocket();
-    // useEffect(()=>{
-    //     if(!socket) return;
-    //     socket?.on('friendRequest', (count:number)=>{
-
-    //     })
-
-    //     return ()=>{
-    //         socket.off('friendRequest')
-    //     }
-    // },[socket])
+export default function SidebarDemo({children }: { children: ReactNode }) {
+    const session = useSession();
+    const user = session.data?.user
+    const userId= user?.id
     const router = useRouter();
+    const {data:requests}= useCheckNumberOfReceivedRequests(userId!)
+    const {socket}=useSocket();
+    const queryClient=useQueryClient();
+    useEffect(()=>{
+        if(!socket) return;
+        socket?.on('friendRequest', (count:number)=>{
+        //   console.log("in friendRequest effect and the count is ", count);
+        //   queryClient.invalidateQueries({queryKey:["receivedRequestsCount", userId]})
+          queryClient.setQueryData(["receivedRequestsCount", userId], (oldData:number)=>{
+            return count
+          })
+        })
+
+        return ()=>{
+            socket.off('friendRequest')
+        }
+    },[queryClient, socket, userId])
     const links = [
         {
             label: "Dashboard",
@@ -44,7 +55,7 @@ export default function SidebarDemo({requests, children }: {requests:number, chi
             icon: (
                 <IconUserBolt className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
             ),
-            requests: requests,
+            requests: requests||0,
         },
         {
             label: "Chat",
@@ -62,8 +73,7 @@ export default function SidebarDemo({requests, children }: {requests:number, chi
         },
     ];
     const [open, setOpen] = useState(false);
-    const session = useSession();
-    const user = session.data?.user
+    
 
     return (
         <div

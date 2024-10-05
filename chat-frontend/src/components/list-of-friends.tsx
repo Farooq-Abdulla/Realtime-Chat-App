@@ -19,14 +19,13 @@ function ListOfFriends({ userId }: { userId: string }) {
   useEffect(()=>{
     if(!socket) return
     socket.on('friend_request_accepted/rejected',()=>{
-      console.log("In friend_request_accepted/rejected hook")
+      // console.log("In friend_request_accepted/rejected hook")
       queryClient.invalidateQueries({queryKey:['friends', userId]})
     })
-
     return ()=>{
       socket.off('friend_request_accepted/rejected')
     }
-  }, [queryClient, socket, userId])
+  }, [queryClient, router, socket, userId])
 
   if (isLoading) return <p>Loading friends...</p>;
   if (error) return <p>Error loading friends.</p>;
