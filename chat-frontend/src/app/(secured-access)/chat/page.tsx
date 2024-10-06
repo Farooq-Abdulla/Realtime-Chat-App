@@ -1,6 +1,6 @@
 import ChatWindow from "@/components/ui/chat-window";
 import getServerSession from "@/lib/getServerSession";
-
+import React from "react";
 
 
 export default async function ChatPage() {

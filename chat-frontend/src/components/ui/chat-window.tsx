@@ -169,148 +169,138 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
 
 
   return (
-    <div className="flex h-full bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
-      {/* Sidebar */}
-      <div
-        ref={sidebarRef}
-        className={`
-          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          transition-transform duration-300 ease-in-out
-          fixed md:relative z-40 w-64 h-full
-          bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700
-          md:translate-x-0 flex flex-col
-        `}
-      >
-        <div className="p-4 flex justify-between items-center border-b border-gray-300 dark:border-gray-700">
-          <h2 className="font-semibold text-gray-800 dark:text-gray-200">Chats</h2>
-          <div className="flex items-center space-x-2">
-            {/* <Popover>
-              <PopoverTrigger asChild>
-                <Button size="icon" variant="ghost" className="hover:bg-gray-200 dark:hover:bg-gray-700">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-60 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700">
-                <div className="space-y-2">
-                  <h3 className="font-medium text-gray-800 dark:text-gray-200">Add New Contact</h3>
-                  <Input
-                    placeholder="Contact name"
-                    value={newContactName}
-                    onChange={(e) => setNewContactName(e.target.value)}
-                    className="bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                  />
-                  <Button onClick={()=>console.log("clicked")} className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                    Add Contact
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover> */}
-            <Button size="icon" variant="ghost" className="hover:bg-gray-200 dark:hover:bg-gray-700">
-              <Plus className="h-4 w-4" />
-            </Button>
-            <Button size="icon" variant="ghost" className="md:hidden hover:bg-gray-200 dark:hover:bg-gray-700" onClick={toggleSidebar}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="p-4">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            <Input
-              placeholder="Search contacts"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-            />
-          </div>
-        </div>
-        <ScrollArea className="flex-grow">
-          <div ref={contactListRef}>
-            {filteredContacts?.map((contact) => (
-              <div
-                key={contact.id}
-                className={`flex items-center space-x-4 p-4 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer ${selectedContact?.id === contact.id ? "bg-gray-200 dark:bg-gray-700" : ""}`}
-                onClick={() => {
-                  setSelectedContact(contact)
-                  setIsSidebarOpen(false)
-                }}
-              >
-                <Avatar>
-                  <AvatarImage src={contact.avatar} alt={contact.name} />
-                  <AvatarFallback className="bg-gray-400 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
-                    {contact.name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  {/* <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}{unreadMsgs[contact.id]>0?unreadMsgs[contact.id]:'' }</p> */}
-                  {(unreadMsgs&& unreadMsgs[contact.id]>0) ? <Badge position="right-side" content={unreadMsgs[contact.id]}><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}</p></Badge>:<p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}</p>}
-                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Click to chat</p>
-                </div>
-                <div className={`w-2 h-2 rounded-full ${onlineUsers.has(contact.id) ? "bg-green-500" : "bg-gray-500 dark:bg-gray-600"}`} />
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
+    <div className="flex flex-col h-[calc(100vh-4rem)] bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100">
+      {/* Mobile Header */}
+      <div className="md:hidden p-4 border-b border-gray-300 dark:border-gray-700 flex items-center bg-white dark:bg-gray-900">
+        <Button
+          size="icon"
+          variant="ghost"
+          className="mr-4 hover:bg-gray-200 dark:hover:bg-gray-700"
+          onClick={toggleSidebar}
+        >
+          <Menu className="h-6 w-6 text-gray-600 dark:text-gray-300" />
+        </Button>
+        <h2 className="font-semibold text-gray-800 dark:text-gray-200">
+          {selectedContact ? selectedContact.name : "Chat"}
+        </h2>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Mobile Header */}
-        <div className="md:hidden p-4 border-b border-gray-300 dark:border-gray-700 flex items-center bg-white dark:bg-gray-900">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="mr-4 hover:bg-gray-200 dark:hover:bg-gray-700"
-            onClick={toggleSidebar}
-          >
-            <Menu className="h-6 w-6 text-gray-600 dark:text-gray-300" />
-          </Button>
-          <h2 className="font-semibold text-gray-800 dark:text-gray-200">
-            {selectedContact ? selectedContact.name : "Chat"}
-          </h2>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <div
+          ref={sidebarRef}
+          className={`
+            ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+            transition-transform duration-300 ease-in-out
+            fixed md:relative z-40 w-64 h-[calc(100vh-4rem)]
+            bg-gray-100 dark:bg-gray-800 border-r border-gray-300 dark:border-gray-700
+            md:translate-x-0 flex flex-col
+          `}
+        >
+          <div className="p-4 flex justify-between items-center border-b border-gray-300 dark:border-gray-700">
+            <h2 className="font-semibold text-gray-800 dark:text-gray-200">Chats</h2>
+            <div className="flex items-center space-x-2">
+              <Button size="icon" variant="ghost" className="hover:bg-gray-200 dark:hover:bg-gray-700">
+                <Plus className="h-4 w-4" />
+              </Button>
+              <Button size="icon" variant="ghost" className="md:hidden hover:bg-gray-200 dark:hover:bg-gray-700" onClick={toggleSidebar}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div className="p-4">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Input
+                placeholder="Search contacts"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+              />
+            </div>
+          </div>
+          <ScrollArea className="flex-grow">
+            <div ref={contactListRef}>
+              {filteredContacts?.map((contact) => (
+                <div
+                  key={contact.id}
+                  className={`flex items-center space-x-4 p-4 hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer ${selectedContact?.id === contact.id ? "bg-gray-200 dark:bg-gray-700" : ""}`}
+                  onClick={() => {
+                    setSelectedContact(contact)
+                    setIsSidebarOpen(false)
+                  }}
+                >
+                  <Avatar>
+                    <AvatarImage src={contact.avatar} alt={contact.name} />
+                    <AvatarFallback className="bg-gray-400 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
+                      {contact.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    {(unreadMsgs&& unreadMsgs[contact.id]>0) ? <Badge position="right-side" content={unreadMsgs[contact.id]}><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}</p></Badge>:<p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}</p>}
+                    <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Click to chat</p>
+                  </div>
+                  <div className={`w-2 h-2 rounded-full ${onlineUsers.has(contact.id) ? "bg-green-500" : "bg-gray-500 dark:bg-gray-600"}`} />
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
 
-        {selectedContact ? (
-          <>
-            <div className="hidden md:block p-4 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
-              <h2 className="font-semibold text-gray-800 dark:text-gray-200">{selectedContact.name}</h2>
-            </div>
-            <ScrollArea className="flex-grow p-4 bg-white dark:bg-gray-900" id="scroll-area">
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {selectedContact ? (
+            <>
+              <div className="hidden md:block p-4 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
+                <h2 className="font-semibold text-gray-800 dark:text-gray-200">{selectedContact.name}</h2>
+              </div>
+             <ScrollArea className="flex-1 p-4 bg-white dark:bg-gray-900" id="scroll-area">
               {messages?.filter((msg) => msg.senderId === selectedContact.id || msg.receiverId === selectedContact.id)?.sort((a, b) => new Date(a.createdAt)?.getTime() - new Date(b.createdAt)?.getTime())?.map((message) => (
-                <div key={message.id} className={`flex ${message.senderId === userId ? "justify-end" : "justify-start"} mb-4`}>
-                  <div className={`max-w-[70%] rounded-lg p-3 ${message.senderId === userId
-                    ? "bg-blue-600 text-white"
+                <div key={message.id} className={`flex  ${message.senderId === userId ? "justify-end" : "justify-start"} mb-4`}>
+                  <div className={`max-w-[75%] rounded-lg p-3 ${message.senderId === userId
+                    ? `bg-blue-600 text-white `
                     : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
                     }`}>
-                    <p>{message.content}</p>
-                    <div className="flex justify-between items-center">
-                      <p className="text-xs mt-1 opacity-70">{new Date(message.createdAt).toLocaleTimeString()}</p>
-                      {message.senderId === userId ? (message.status === 'read' ? <IconChecks stroke={1} color="var(--black)" className="size-4 opacity-70" /> : (message.status === 'delivered' ? <IconChecks stroke={1} className="size-4 opacity-70" /> : <IconCheck stroke={1} className="size-4 opacity-70" />)) : null}
+                    <p className={`break-words whitespace-pre-wrap text-sm`}>{message.content}</p>
+                    <div className="flex justify-between items-center mt-1">
+                      <p className="text-xs opacity-70">{new Date(message.createdAt).toLocaleTimeString()}</p>
+                      {message.senderId === userId && (
+                        <span className="ml-2">
+                          {message.status === 'read' ? (
+                            <IconChecks stroke={1} color="var(--black)" className="size-4 opacity-70" />
+                          ) : message.status === 'delivered' ? (
+                            <IconChecks stroke={1} className="size-4 opacity-70" />
+                          ) : (
+                            <IconCheck stroke={1} className="size-4 opacity-70" />
+                          )}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
               ))}
               <div ref={messagesEndRef} />
             </ScrollArea>
-            <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 flex items-center space-x-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 overflow-hidden"
-              />
-              <Button type="submit" size="icon" className="bg-blue-600 hover:bg-blue-700 text-white">
-                <Send className="h-4 w-4" />
-                <span className="sr-only">Send message</span>
-              </Button>
-            </form>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900">
-            Select a contact to start chatting
-          </div>
-        )}
-      </div>``
+              <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 flex items-center space-x-2">
+                <Input
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 overflow-hidden"
+                />
+                <Button type="submit" size="icon" className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Send className="h-4 w-4" />
+                  <span className="sr-only">Send message</span>
+                </Button>
+              </form>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-900">
+              Select a contact to start chatting
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
