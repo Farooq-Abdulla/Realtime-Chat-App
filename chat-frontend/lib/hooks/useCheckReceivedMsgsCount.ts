@@ -2,10 +2,10 @@
 import CheckDeliveredMsgsOfaUser from "@/server-actions/check-delivered-messages-of-user";
 import { useQuery } from "@tanstack/react-query";
 
-const useCheckReceivedMessages=( receiverId:string)=>{
+const useCheckReceivedMessages=( userId:string)=>{
     return useQuery({
-        queryKey:['count', receiverId],
-        queryFn: ()=>  CheckDeliveredMsgsOfaUser(receiverId)
+        queryKey:['count', userId],
+        queryFn: ()=>  CheckDeliveredMsgsOfaUser(userId)
     })
 }
 export default useCheckReceivedMessages;

@@ -77,6 +77,7 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
       queryClient.setQueryData(['count',userId], (oldObj:Record<string, number>)=>{
         return {...oldObj, [selectedContact?.id!]:0}
       })
+      arr.map(async(message)=> await UpdateMessageStatus(message.id, 'read'))
     }
   }, [isAtBottom, messages, queryClient, selectedContact?.id, selectedContact?.name, socket, userId])
 
@@ -109,10 +110,10 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
 
 
     socket?.on("read-msg", (response: Messages[]) => {
-      response.forEach(async (message) => {
-        await UpdateMessageStatus(message.id, "read")
+      // response.forEach(async (message) => {
+      //   await UpdateMessageStatus(message.id, "read")
 
-      })
+      // })
       // queryClient.invalidateQueries({ queryKey: ["messages", userId, selectedContact?.id] })
       queryClient.setQueryData(['messages', userId, selectedContact?.id], (oldMsgs: Messages[]) => {
         return oldMsgs.map(msg => {
