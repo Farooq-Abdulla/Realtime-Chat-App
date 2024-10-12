@@ -25,7 +25,7 @@ export default async function SecuredAccessLayout({children}: {children: React.R
     //     }
     // },[queryClient, socket, userId, count])
   return (
-    <SidebarDemo>{children}</SidebarDemo>
+    <SidebarDemo userId={userId!}>{children}</SidebarDemo>
 
   );
 }

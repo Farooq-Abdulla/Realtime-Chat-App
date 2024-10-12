@@ -2,7 +2,9 @@
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import { useSocket } from "@/lib/global-socket-provider";
 import { useCheckNumberOfReceivedRequests } from "@/lib/hooks/useCheckNumberOfReceivedRequests";
+import useCheckReceivedMessages from "@/lib/hooks/useCheckReceivedMsgsCount";
 import { cn } from "@/lib/utils";
+import { Messages } from "@prisma/client";
 import {
     IconArrowLeft,
     IconBrandMessenger,
@@ -19,28 +21,76 @@ import { ReactNode, useEffect, useState } from "react";
 import { DarkModeToggle } from "./dark-mode-toggle";
 
 
-export default function SidebarDemo({children }: { children: ReactNode }) {
+export default function SidebarDemo({children , userId}: { children: ReactNode, userId:string}) {
     const session = useSession();
     const user = session.data?.user
-    const userId= user?.id
+    // const userId= user?.id
     const router = useRouter();
     const {data:requests}= useCheckNumberOfReceivedRequests(userId!)
+    const {data:unreadMsgs}=useCheckReceivedMessages(userId!)
     const {socket}=useSocket();
     const queryClient=useQueryClient();
     useEffect(()=>{
-        if(!socket) return;
+        if(!socket) {
+            console.log("Some Problem")
+            return
+        };
+
+        socket.on("received-msg-sidebar", (response: Messages) => {
+
+            // console.log("From sidebar in received-msg", response);
+            // queryClient.setQueryData(['count', userId], (oldObj:Record<string,number>)=>{
+            //     const senderId=response.senderId;
+            //     const currentCount= oldObj[senderId]|0
+            //     return {...oldObj, [senderId]:currentCount+1}
+            //   })
+            queryClient.invalidateQueries({queryKey:['count', userId!]})
+    
+        });
         socket?.on('friendRequest', (count:number)=>{
         //   console.log("in friendRequest effect and the count is ", count);
         //   queryClient.invalidateQueries({queryKey:["receivedRequestsCount", userId]})
           queryClient.setQueryData(["receivedRequestsCount", userId], (oldData:number)=>{
             return count
           })
-        })
+        });
+
+        // socket.on("read-msg", (response:Messages[])=>{
+        //     console.log("From sidebar in read msg ")
+        //     queryClient.invalidateQueries({queryKey:['count', userId!]})
+
+        // })
+        
+    
 
         return ()=>{
             socket.off('friendRequest')
+            socket.off('read-msg')
+
         }
     },[queryClient, socket, userId])
+
+    // useEffect(()=>{
+    //     if(!socket) {
+    //         console.log("Problem ")
+    //         return
+    //     }
+    //     const handleReceivedMsg = (response: Messages) => {
+    //         console.log("From sidebar in received-msg", response);
+    //         queryClient.setQueryData(['count', userId!], (oldObj: Record<string, number>) => {
+    //             const senderId = response.senderId;
+    //             const currentCount = oldObj[senderId] || 0;
+    //             return { ...oldObj, [senderId]: currentCount + 1 };
+    //         });
+    //     };
+    
+    //     socket.on("received-msg-sidebar", handleReceivedMsg);
+    
+    //     return () => {
+    //         socket.off("received-msg-sidebar", handleReceivedMsg); // Cleanup listener
+    //     };
+
+    // }, [queryClient, socket, userId])
     const links = [
         {
             label: "Dashboard",
@@ -63,6 +113,7 @@ export default function SidebarDemo({children }: { children: ReactNode }) {
             icon: (
                 <IconBrandMessenger className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
             ),
+            requests: unreadMsgs&&Object.values(unreadMsgs!).reduce((acc,curr)=> curr+acc, 0)||0
         },
         {
             label: "Logout",

@@ -10,7 +10,7 @@ import UpdateMessageStatus from "@/server-actions/update-msg-status"
 import { Messages } from "@prisma/client"
 import { IconCheck, IconChecks } from "@tabler/icons-react"
 import { useQueryClient } from "@tanstack/react-query"
-import { Menu, Plus, Search, Send, X } from "lucide-react"
+import { Menu, Search, Send, X } from "lucide-react"
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSocket } from "../../../lib/global-socket-provider"
 import { useGetFriends } from "../../../lib/hooks/useGetFriends"
@@ -37,13 +37,40 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
   const sidebarRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const contactListRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [isFocused, setIsFocused] = useState(false);
+
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }
+      if (e.key === "Escape") {
+        e.preventDefault()
+        inputRef.current?.blur()
+      }
+    }
+
+    document.addEventListener("keydown", down)
+    return () => document.removeEventListener("keydown", down)
+  }, [])
+
+  const handleFocus = () => {
+    setIsFocused(true);
+  };
+
+  const handleBlur = () => {
+    setIsFocused(false);
+  };
 
   const { data: contacts, isLoading } = useGetFriends(userId)
   const { onlineUsers, socket } = useSocket();
   if (isLoading) <p>Loading ...</p>
   const { mutate } = useSendMessages(userId, selectedContact?.id!)
   const { data: messages, isFetching } = useGetMessages(userId, selectedContact?.id!);
-  const {data:unreadMsgs}=useCheckReceivedMessages(userId)
+  const { data: unreadMsgs } = useCheckReceivedMessages(userId)
 
   // console.log("online users from chat window", onlineUsers);
 
@@ -57,12 +84,12 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
   const handleSendMessage = useCallback((e: React.FormEvent) => {
     e.preventDefault()
     if (newMessage.trim() && selectedContact) {
-      mutate({ senderId: userId, receiverId: selectedContact.id, content: newMessage ,online: onlineUsers.has(selectedContact.id)})
+      mutate({ senderId: userId, receiverId: selectedContact.id, content: newMessage, online: onlineUsers.has(selectedContact.id) })
       setNewMessage("")
     }
   }, [newMessage, selectedContact, mutate, userId, onlineUsers])
 
-  
+
 
   // whenever i receive a msg , this means , the msg is stored in DB and WSS is emitting "recived-msg"
   // I have to emit to WSS that i've read the msg. so that there is an update in DB and UI
@@ -74,16 +101,17 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
       // setUnreadMsgs((prevUnreadMsgs)=>{
       //   return {...prevUnreadMsgs, [selectedContact?.id!]:0}
       // })
-      queryClient.setQueryData(['count',userId], (oldObj:Record<string, number>)=>{
-        return {...oldObj, [selectedContact?.id!]:0}
+      queryClient.setQueryData(['count', userId], (oldObj: Record<string, number>) => {
+        return { ...oldObj, [selectedContact?.id!]: 0 }
       })
-      arr.map(async(message)=> await UpdateMessageStatus(message.id, 'read'))
+      arr.map(async (message) => await UpdateMessageStatus(message.id, 'read'))
+      // queryClient.invalidateQueries({queryKey:['count', userId]})
     }
   }, [isAtBottom, messages, queryClient, selectedContact?.id, selectedContact?.name, socket, userId])
 
 
 
-  
+
   useEffect(() => {
     if (!socket) return;
     socket?.on("received-msg", (response: Messages) => {
@@ -94,10 +122,10 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
       // })
 
       //who sent me how many msgs 
-      queryClient.setQueryData(['count', userId], (oldObj:Record<string,number>)=>{
-        const senderId=response.senderId;
-        const currentCount= oldObj[senderId]|0
-        return {...oldObj, [senderId]:currentCount+1}
+      queryClient.setQueryData(['count', userId], (oldObj: Record<string, number>) => {
+        const senderId = response.senderId;
+        const currentCount = oldObj[senderId] | 0
+        return { ...oldObj, [senderId]: currentCount + 1 }
       })
 
       // setUnreadMsgs((prevUnreadMsgs)=>{
@@ -135,7 +163,7 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
 
 
 
-  {/* Mobile Sidebar */}
+  {/* Mobile Sidebar */ }
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
@@ -157,7 +185,7 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
     setIsAtBottom(true)
   }, [messages, setIsAtBottom])
 
-  
+
 
 
   const filteredContacts = useMemo(() => {
@@ -201,9 +229,9 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
           <div className="p-4 flex justify-between items-center border-b border-gray-300 dark:border-gray-700">
             <h2 className="font-semibold text-gray-800 dark:text-gray-200">Chats</h2>
             <div className="flex items-center space-x-2">
-              <Button size="icon" variant="ghost" className="hover:bg-gray-200 dark:hover:bg-gray-700">
+              {/* <Button size="icon" variant="ghost" className="hover:bg-gray-200 dark:hover:bg-gray-700">
                 <Plus className="h-4 w-4" />
-              </Button>
+              </Button> */}
               <Button size="icon" variant="ghost" className="md:hidden hover:bg-gray-200 dark:hover:bg-gray-700" onClick={toggleSidebar}>
                 <X className="h-4 w-4" />
               </Button>
@@ -215,9 +243,19 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
               <Input
                 placeholder="Search contacts"
                 value={searchQuery}
+                ref={inputRef}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
                 className="pl-10 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
               />
+              {!isFocused && (
+                <kbd
+                  className={`pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 absolute right-4 top-1/2 transform -translate-y-1/2`}
+                >
+                  <span className="text-xs">⌘</span>K
+                </kbd>
+              )}
             </div>
           </div>
           <ScrollArea className="flex-grow">
@@ -238,7 +276,7 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    {(unreadMsgs&& unreadMsgs[contact.id]>0) ? <Badge position="right-side" content={unreadMsgs[contact.id]}><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}</p></Badge>:<p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}</p>}
+                    {(unreadMsgs && unreadMsgs[contact.id] > 0) ? <Badge position="right-side" content={unreadMsgs[contact.id]}><p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}</p></Badge> : <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{contact.name}</p>}
                     <p className="text-xs text-gray-600 dark:text-gray-400 truncate">Click to chat</p>
                   </div>
                   <div className={`w-2 h-2 rounded-full ${onlineUsers.has(contact.id) ? "bg-green-500" : "bg-gray-500 dark:bg-gray-600"}`} />
@@ -255,33 +293,33 @@ export default function ChatWindow({ userId, chatId }: { userId: string, chatId?
               <div className="hidden md:block p-4 border-b border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <h2 className="font-semibold text-gray-800 dark:text-gray-200">{selectedContact.name}</h2>
               </div>
-             <ScrollArea className="flex-1 p-4 bg-white dark:bg-gray-900" id="scroll-area">
-              {messages?.filter((msg) => msg.senderId === selectedContact.id || msg.receiverId === selectedContact.id)?.sort((a, b) => new Date(a.createdAt)?.getTime() - new Date(b.createdAt)?.getTime())?.map((message) => (
-                <div key={message.id} className={`flex  ${message.senderId === userId ? "justify-end" : "justify-start"} mb-4`}>
-                  <div className={`max-w-[75%] rounded-lg p-3 ${message.senderId === userId
-                    ? `bg-blue-600 text-white `
-                    : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-                    }`}>
-                    <p className={`break-words whitespace-pre-wrap text-sm`}>{message.content}</p>
-                    <div className="flex justify-between items-center mt-1">
-                      <p className="text-xs opacity-70">{new Date(message.createdAt).toLocaleTimeString()}</p>
-                      {message.senderId === userId && (
-                        <span className="ml-2">
-                          {message.status === 'read' ? (
-                            <IconChecks stroke={1} color="var(--black)" className="size-4 opacity-70" />
-                          ) : message.status === 'delivered' ? (
-                            <IconChecks stroke={1} className="size-4 opacity-70" />
-                          ) : (
-                            <IconCheck stroke={1} className="size-4 opacity-70" />
-                          )}
-                        </span>
-                      )}
+              <ScrollArea className="flex-1 p-4 bg-white dark:bg-gray-900" id="scroll-area">
+                {messages?.filter((msg) => msg.senderId === selectedContact.id || msg.receiverId === selectedContact.id)?.sort((a, b) => new Date(a.createdAt)?.getTime() - new Date(b.createdAt)?.getTime())?.map((message) => (
+                  <div key={message.id} className={`flex  ${message.senderId === userId ? "justify-end" : "justify-start"} mb-4`}>
+                    <div className={`max-w-[75%] rounded-lg p-3 ${message.senderId === userId
+                      ? `bg-blue-600 text-white `
+                      : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                      }`}>
+                      <p className={`break-words whitespace-pre-wrap text-sm`}>{message.content}</p>
+                      <div className="flex justify-between items-center mt-1">
+                        <p className="text-xs opacity-70">{new Date(message.createdAt).toLocaleTimeString()}</p>
+                        {message.senderId === userId && (
+                          <span className="ml-2">
+                            {message.status === 'read' ? (
+                              <IconChecks stroke={1} color="var(--black)" className="size-4 opacity-70" />
+                            ) : message.status === 'delivered' ? (
+                              <IconChecks stroke={1} className="size-4 opacity-70" />
+                            ) : (
+                              <IconCheck stroke={1} className="size-4 opacity-70" />
+                            )}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </ScrollArea>
+                ))}
+                <div ref={messagesEndRef} />
+              </ScrollArea>
               <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 flex items-center space-x-2">
                 <Input
                   value={newMessage}

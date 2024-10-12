@@ -127,7 +127,10 @@ io.on('connection', (socket: Socket) => {
                 await pub.publish("ACCEPT/REJECT_FRIEND_REQUEST", id)
             }
         },500)
-        
+        let count=await redis.get(`requests:${receiverId}`)
+        if(Number(count)<1) {
+            await redis.del(`requests:${receiverId}`)
+        }
     })
     socket.on("removeFriend", async(friendId)=>{
         // console.log('FriendId :',friendId);
@@ -170,6 +173,7 @@ sub.on("message", async(channel, message)=>{
         const exits=await redis.hexists(`serverSockets:${serverId}`, socketId)
         if(exits){
             io.to(socketId).emit("received-msg",response);
+            io.to(socketId).emit("received-msg-sidebar",response);
         }
     }else if(channel==="READ_MESSAGE"){
         const {socketId, response}=JSON.parse(message)

@@ -10,10 +10,12 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Realtime Chat App",
-  description: "Realtime Chat App",
+  title: {
+    template: "%s | RealtimeChat",
+    default: "RealtimeChat"
+  },
+  description: "The Realtime Chat App",
 };
-
 
 
 export default async function RootLayout({
