@@ -16,7 +16,7 @@ import { motion } from "framer-motion";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
 import { DarkModeToggle } from "./dark-mode-toggle";
 
@@ -30,9 +30,14 @@ export default function SidebarDemo({children , userId}: { children: ReactNode, 
     const {data:unreadMsgs}=useCheckReceivedMessages(userId!)
     const {socket}=useSocket();
     const queryClient=useQueryClient();
+    const url=usePathname()
+
     useEffect(()=>{
+        if(url==="/chat") {
+            // console.log(url)
+            return
+        }
         if(!socket) {
-            console.log("Some Problem")
             return
         };
 
@@ -68,7 +73,7 @@ export default function SidebarDemo({children , userId}: { children: ReactNode, 
             socket.off('read-msg')
 
         }
-    },[queryClient, socket, userId])
+    },[queryClient, socket, url, userId])
 
     // useEffect(()=>{
     //     if(!socket) {
