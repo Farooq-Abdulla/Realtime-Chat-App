@@ -60,17 +60,18 @@ export default function SidebarDemo({children , userId}: { children: ReactNode, 
           })
         });
 
-        // socket.on("read-msg", (response:Messages[])=>{
-        //     console.log("From sidebar in read msg ")
-        //     queryClient.invalidateQueries({queryKey:['count', userId!]})
+        socket.on("read-msg-sidebar", (response:Messages[])=>{
+            // console.log("From sidebar in read msg ")
+            queryClient.invalidateQueries({queryKey:['count', userId!]})
 
-        // })
+        })
         
     
 
         return ()=>{
             socket.off('friendRequest')
-            socket.off('read-msg')
+            socket.off('received-msg-sidebar')
+            socket.off('read-msg-sidebar')
 
         }
     },[queryClient, socket, url, userId])

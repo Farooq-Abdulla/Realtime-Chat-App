@@ -180,6 +180,7 @@ sub.on("message", async(channel, message)=>{
         const exits=await redis.hexists(`serverSockets:${serverId}`, socketId)
         if(exits){
             io.to(socketId).emit("read-msg", response)
+            io.to(socketId).emit("read-msg-sidebar", response)
         }
     }else if(channel==="DISCONNECT"){
         const exits=await redis.hexists(`serverSockets:${serverId}`, message)
