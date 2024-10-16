@@ -30,6 +30,10 @@ export default async function CheckIfValidUser(data: z.infer<typeof formSchema>)
             return { error: "User not found. Ask the owner of the email address to SignUp" };
         }
 
+        if(validUser.id===currUserId){
+            return { error: "You cannot send a request to yourself. Try a different email address" };
+        }
+
         const validRequest=await prisma.friendRequest.findUnique({
             where:{
                 senderId_receiverId:{
